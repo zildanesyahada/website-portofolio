@@ -12,7 +12,6 @@ const links = [
 ]
 const ids = links.map((l) => l.id)
 
-// Menu aktif mengikuti section yang sedang terlihat
 function useActiveSection() {
   const [active, setActive] = useState(ids[0])
 
@@ -35,7 +34,6 @@ function useActiveSection() {
   return active
 }
 
-// Menandai apakah halaman sudah di-scroll
 function useScrolled(offset = 40) {
   const [scrolled, setScrolled] = useState(false)
 
@@ -54,6 +52,29 @@ export default function Header() {
   const active = useActiveSection()
   const scrolled = useScrolled()
 
+  // Scroll tepat ke isi section (pill/label) di bawah sticky header
+  const handleScroll = (e, id) => {
+    e.preventDefault()
+    setOpen(false)
+
+    const targetElement = document.getElementById(id)
+    if (!targetElement) return
+
+    const header = document.querySelector('header')
+    const headerHeight = header ? header.offsetHeight : 80
+    const paddingTop = parseFloat(getComputedStyle(targetElement).paddingTop) || 0
+    const gap = 16
+
+    const y =
+      targetElement.getBoundingClientRect().top +
+      window.pageYOffset +
+      paddingTop -
+      headerHeight -
+      gap
+
+    window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' })
+  }
+
   return (
     <header
       className={`sticky top-0 z-50 transition-colors duration-300 ${
@@ -66,9 +87,9 @@ export default function Header() {
         className={`transition-[padding] duration-300 ${scrolled ? 'py-3' : 'py-5'}`}
       >
         <div className="flex items-center justify-between md:grid md:grid-cols-[1fr_auto_1fr]">
-          {/* Logo + nama (memudar di desktop saat di-scroll) */}
           <a
             href="#home"
+            onClick={(e) => handleScroll(e, 'home')}
             aria-label="Zildane Syahada, home"
             className={`flex items-center gap-3 justify-self-start transition-all duration-300 ${
               scrolled ? 'md:invisible md:-translate-y-2 md:opacity-0' : ''
@@ -82,7 +103,6 @@ export default function Header() {
             </span>
           </a>
 
-          {/* Menu pill (tablet ke atas) */}
           <nav
             aria-label="Main"
             className={`hidden items-center gap-1 rounded-full border border-line bg-surface/85 px-3 py-2 backdrop-blur-md transition-shadow duration-300 md:flex ${
@@ -95,6 +115,7 @@ export default function Header() {
                 <a
                   key={l.id}
                   href={`#${l.id}`}
+                  onClick={(e) => handleScroll(e, l.id)}
                   className={`px-3 py-1 text-sm transition-colors duration-200 lg:px-4 ${
                     isActive ? 'text-ink' : 'text-muted hover:text-ink'
                   }`}
@@ -113,12 +134,12 @@ export default function Header() {
               )
             })}
 
-            {/* Contact masuk ke dalam pill saat di-scroll */}
             <AnimatePresence initial={false}>
               {scrolled && (
                 <motion.a
                   key="pill-contact"
                   href="#contact"
+                  onClick={(e) => handleScroll(e, 'contact')}
                   initial={{ opacity: 0, width: 0, marginLeft: 0 }}
                   animate={{ opacity: 1, width: 'auto', marginLeft: 4 }}
                   exit={{ opacity: 0, width: 0, marginLeft: 0 }}
@@ -131,16 +152,16 @@ export default function Header() {
             </AnimatePresence>
           </nav>
 
-          {/* Tombol Contact (tablet ke atas, memudar saat di-scroll) */}
           <div
             className={`hidden justify-self-end transition-all duration-300 md:block ${
               scrolled ? 'md:invisible md:-translate-y-2 md:opacity-0' : ''
             }`}
           >
-            <Button href="#contact" size="sm">Contact</Button>
+            <Button href="#contact" onClick={(e) => handleScroll(e, 'contact')} size="sm">
+              Contact
+            </Button>
           </div>
 
-          {/* Hamburger (mobile) */}
           <button
             onClick={() => setOpen(!open)}
             aria-label="Toggle menu"
@@ -162,7 +183,6 @@ export default function Header() {
         </div>
       </Container>
 
-      {/* Dropdown mobile */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -172,11 +192,11 @@ export default function Header() {
             transition={{ duration: 0.2 }}
             className="absolute inset-x-5 top-full mt-2 rounded-2xl border border-line bg-surface p-2 md:hidden"
           >
-{links.map((l) => (
+            {links.map((l) => (
               <a
                 key={l.id}
                 href={`#${l.id}`}
-                onClick={() => setOpen(false)}
+                onClick={(e) => handleScroll(e, l.id)}
                 className={`flex h-12 items-center border-b border-line px-3 ${
                   active === l.id ? 'font-medium text-ink' : 'text-muted'
                 }`}
@@ -184,9 +204,13 @@ export default function Header() {
                 {l.label}
               </a>
             ))}
-            <Button href="#contact" onClick={() => setOpen(false)} className="mt-2 w-full">
+            <a
+              href="#contact"
+              onClick={(e) => handleScroll(e, 'contact')}
+              className="mt-2 flex h-11 w-full items-center justify-center rounded-xl bg-ink text-sm font-medium text-surface"
+            >
               Contact
-            </Button>
+            </a>
           </motion.div>
         )}
       </AnimatePresence>
